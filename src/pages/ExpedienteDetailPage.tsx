@@ -7,12 +7,13 @@ import { EstadoBadge } from '../components/EstadoBadge';
 import {
   agregarActividadSchema,
   cerrarExpedienteSchema,
+  reabrirExpedienteSchema,
   type AgregarActividadFormData,
   type CerrarExpedienteFormData,
+  type ReopenFormData,
 } from '../schemas/expedienteSchema';
 import type { EntradaHistorial } from '../types';
 
-/* ── Utilidades ── */
 function formatFecha(iso: string) {
   return new Date(iso).toLocaleString('es-GT', {
     dateStyle: 'medium',
@@ -20,7 +21,6 @@ function formatFecha(iso: string) {
   });
 }
 
-/* ── Componente historial ── */
 const historialConfig = {
   apertura: {
     border: 'border-green-400',
@@ -42,6 +42,11 @@ const historialConfig = {
     badge: 'bg-gray-100 text-gray-700',
     label: '🔒 Cierre',
   },
+  reapertura: {
+    border: 'border-purple-400',
+    badge: 'bg-purple-100 text-purple-800',
+    label: '🔓 Reapertura',
+  },
 } as const;
 
 function HistorialItem({ entrada }: { entrada: EntradaHistorial }) {
@@ -59,21 +64,18 @@ function HistorialItem({ entrada }: { entrada: EntradaHistorial }) {
   );
 }
 
-/* ── Mensaje de alerta ── */
 function Alerta({ tipo, mensaje }: { tipo: 'exito' | 'error'; mensaje: string }) {
   const estilos = {
     exito: 'bg-green-50 border-green-300 text-green-800',
     error: 'bg-red-50 border-red-300 text-red-700',
   };
-  const icono = tipo === 'exito' ? '✓' : '⚠';
   return (
     <div className={`border rounded-lg px-4 py-3 text-sm mb-4 ${estilos[tipo]}`}>
-      {icono} {mensaje}
+      {tipo === 'exito' ? '✓' : '⚠'} {mensaje}
     </div>
   );
 }
 
-/* ── Página principal ── */
 export function ExpedienteDetailPage() {
   const { id } = useParams<{ id: string }>();
   const store = useExpedientesStore();
@@ -81,13 +83,16 @@ export function ExpedienteDetailPage() {
 
   const [alerta, setAlerta] = useState<{ tipo: 'exito' | 'error'; mensaje: string } | null>(null);
   const [mostrarFormCierre, setMostrarFormCierre] = useState(false);
+  const [mostrarFormReapertura, setMostrarFormReapertura] = useState(false);
 
   const actividadForm = useForm<AgregarActividadFormData>({
     resolver: zodResolver(agregarActividadSchema),
   });
-
   const cierreForm = useForm<CerrarExpedienteFormData>({
     resolver: zodResolver(cerrarExpedienteSchema),
+  });
+  const reaperturaForm = useForm<ReopenFormData>({
+    resolver: zodResolver(reabrirExpedienteSchema),
   });
 
   if (!expediente) {
@@ -106,13 +111,11 @@ export function ExpedienteDetailPage() {
     setAlerta({ tipo: 'exito', mensaje: msg });
     setTimeout(() => setAlerta(null), 4000);
   };
-
   const mostrarError = (msg: string) => {
     setAlerta({ tipo: 'error', mensaje: msg });
     setTimeout(() => setAlerta(null), 6000);
   };
 
-  /* ── Handlers ── */
   const onAgregarActividad = (data: AgregarActividadFormData) => {
     store.agregarActividad(expediente.id, data.descripcion, data.tipo || undefined);
     actividadForm.reset();
@@ -135,19 +138,28 @@ export function ExpedienteDetailPage() {
     }
   };
 
+  const onReabrir = (data: ReopenFormData) => {
+    const resultado = store.reabrirExpediente(expediente.id, data.motivoReapertura);
+    if (resultado.ok) {
+      setMostrarFormReapertura(false);
+      reaperturaForm.reset();
+      mostrarExito('Expediente reabierto. Ahora está En seguimiento.');
+    } else {
+      mostrarError(resultado.error ?? 'No se pudo reabrir el expediente.');
+    }
+  };
+
   const estaCerrado = expediente.estado === 'Cerrado';
 
   return (
     <div className="max-w-3xl mx-auto">
-      {/* Alerta */}
       {alerta && <Alerta tipo={alerta.tipo} mensaje={alerta.mensaje} />}
 
-      {/* Navegación */}
+      {/* Cabecera */}
       <div className="mb-6">
         <Link to="/expedientes" className="text-blue-600 hover:underline text-sm">
           ← Volver a expedientes
         </Link>
-
         <div className="flex items-start justify-between mt-3">
           <div>
             <div className="flex items-center gap-2 flex-wrap mb-2">
@@ -166,7 +178,7 @@ export function ExpedienteDetailPage() {
         </div>
       </div>
 
-      {/* Datos del expediente */}
+      {/* Datos */}
       <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5 shadow-sm">
         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
           Información del expediente
@@ -187,17 +199,70 @@ export function ExpedienteDetailPage() {
         </div>
       </div>
 
-      {/* Aviso expediente cerrado */}
+      {/* ── Expediente CERRADO: aviso + botón reabrir ── */}
       {estaCerrado && (
-        <div className="bg-gray-50 border border-gray-300 rounded-xl p-4 mb-5 text-sm text-gray-600 flex items-start gap-2">
-          <span>🔒</span>
-          <span>
-            Este expediente está <strong>cerrado</strong>. No admite nuevas actividades ni cambios de estado.
-          </span>
+        <div className="bg-gray-50 border border-gray-300 rounded-xl p-5 mb-5 shadow-sm">
+          <div className="flex items-start gap-2 mb-4">
+            <span>🔒</span>
+            <p className="text-sm text-gray-600">
+              Este expediente está <strong>cerrado</strong>. No admite nuevas actividades.
+              Puede reabrirse si se recibe información posterior al cierre.
+            </p>
+          </div>
+
+          <button
+            onClick={() => setMostrarFormReapertura(!mostrarFormReapertura)}
+            className="px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-700 transition shadow-sm"
+          >
+            🔓 Reabrir expediente
+          </button>
+
+          {mostrarFormReapertura && (
+            <form
+              onSubmit={reaperturaForm.handleSubmit(onReabrir)}
+              className="mt-4 pt-4 border-t space-y-3"
+            >
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Motivo de reapertura <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  {...reaperturaForm.register('motivoReapertura')}
+                  rows={2}
+                  className={`w-full border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 transition ${
+                    reaperturaForm.formState.errors.motivoReapertura
+                      ? 'border-red-400 focus:ring-red-300 bg-red-50'
+                      : 'border-gray-300 focus:ring-purple-500'
+                  }`}
+                  placeholder="Indique por qué se retoma el seguimiento de este expediente..."
+                />
+                {reaperturaForm.formState.errors.motivoReapertura && (
+                  <p className="mt-1 text-xs text-red-600">
+                    ⚠ {reaperturaForm.formState.errors.motivoReapertura.message}
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-700 transition"
+                >
+                  Confirmar reapertura
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMostrarFormReapertura(false); reaperturaForm.reset(); }}
+                  className="px-4 py-2 border border-gray-300 text-sm text-gray-600 rounded-lg hover:bg-gray-50 transition"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       )}
 
-      {/* Acciones de estado */}
+      {/* ── Acciones de estado (Abierto / En seguimiento) ── */}
       {!estaCerrado && (
         <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5 shadow-sm">
           <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
@@ -247,13 +312,11 @@ export function ExpedienteDetailPage() {
                       </p>
                     )}
                   </div>
-
                   {!expediente.historial.some((h) => h.tipo === 'actividad') && (
                     <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg">
                       ⚠ Para cerrar el expediente debe existir al menos una actividad registrada.
                     </p>
                   )}
-
                   <div className="flex gap-2">
                     <button
                       type="submit"
@@ -263,10 +326,7 @@ export function ExpedienteDetailPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        setMostrarFormCierre(false);
-                        cierreForm.reset();
-                      }}
+                      onClick={() => { setMostrarFormCierre(false); cierreForm.reset(); }}
                       className="px-4 py-2 border border-gray-300 text-sm text-gray-600 rounded-lg hover:bg-gray-50 transition"
                     >
                       Cancelar
@@ -279,7 +339,7 @@ export function ExpedienteDetailPage() {
         </div>
       )}
 
-      {/* Registrar actividad */}
+      {/* ── Registrar actividad (solo si NO está cerrado) ── */}
       {!estaCerrado && (
         <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5 shadow-sm">
           <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
@@ -294,7 +354,7 @@ export function ExpedienteDetailPage() {
               <input
                 {...actividadForm.register('tipo')}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Ej: Notificación, Audiencia, Consulta, Diligencia..."
+                placeholder="Ej: Notificación, Audiencia, Consulta..."
               />
             </div>
             <div>
@@ -327,7 +387,7 @@ export function ExpedienteDetailPage() {
         </div>
       )}
 
-      {/* Historial */}
+      {/* ── Historial ── */}
       <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
           Historial cronológico — {expediente.historial.length} entrada

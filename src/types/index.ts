@@ -1,6 +1,6 @@
 export type EstadoExpediente = 'Abierto' | 'En seguimiento' | 'Cerrado';
 export type CategoriaExpediente = 'civil' | 'familiar' | 'laboral';
-export type TipoHistorial = 'apertura' | 'actividad' | 'cambio_estado' | 'cierre';
+export type TipoHistorial = 'apertura' | 'actividad' | 'cambio_estado' | 'cierre' | 'reapertura';
 
 export interface EntradaHistorial {
   id: string;
@@ -10,6 +10,7 @@ export interface EntradaHistorial {
   estadoAnterior?: EstadoExpediente;
   estadoNuevo?: EstadoExpediente;
   motivoCierre?: string;
+  motivoReapertura?: string;
 }
 
 export interface Expediente {

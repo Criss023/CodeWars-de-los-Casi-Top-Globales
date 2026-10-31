@@ -1,9 +1,15 @@
 import type { EstadoExpediente } from '../types';
 
 const estilos: Record<EstadoExpediente, string> = {
-  Abierto: 'bg-green-100 text-green-800 border border-green-300',
-  'En seguimiento': 'bg-yellow-100 text-yellow-800 border border-yellow-300',
-  Cerrado: 'bg-gray-100 text-gray-600 border border-gray-300',
+  Abierto:          'bg-emerald-100 text-emerald-700 border border-emerald-200 ring-1 ring-emerald-300/40',
+  'En seguimiento': 'bg-amber-100  text-amber-700  border border-amber-200  ring-1 ring-amber-300/40',
+  Cerrado:          'bg-slate-100  text-slate-500  border border-slate-200  ring-1 ring-slate-300/40',
+};
+
+const iconos: Record<EstadoExpediente, string> = {
+  Abierto:          '🟢',
+  'En seguimiento': '🟡',
+  Cerrado:          '⚫',
 };
 
 export function EstadoBadge({
@@ -15,8 +21,10 @@ export function EstadoBadge({
 }) {
   return (
     <span
-      className={`inline-block text-xs font-semibold px-2 py-0.5 rounded-full ${estilos[estado]} ${className}`}
+      className={`inline-flex items-center gap-1 text-xs font-semibold
+                  px-2.5 py-1 rounded-full ${estilos[estado]} ${className}`}
     >
+      <span className="text-[9px]">{iconos[estado]}</span>
       {estado}
     </span>
   );

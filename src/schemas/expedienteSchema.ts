@@ -21,3 +21,9 @@ export const cerrarExpedienteSchema = z.object({
   motivoCierre: z.string().trim().min(1, 'El motivo de cierre es obligatorio'),
 });
 export type CerrarExpedienteFormData = z.infer<typeof cerrarExpedienteSchema>;
+
+// ── NUEVO: Parte 2 ──
+export const reabrirExpedienteSchema = z.object({
+  motivoReapertura: z.string().trim().min(1, 'El motivo de reapertura es obligatorio'),
+});
+export type ReopenFormData = z.infer<typeof reabrirExpedienteSchema>;

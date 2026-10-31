@@ -9,6 +9,7 @@ interface ExpedientesStore {
   agregarActividad: (expedienteId: string, descripcion: string, tipo?: string) => void;
   pasarASeguimiento: (expedienteId: string) => void;
   cerrarExpediente: (expedienteId: string, motivoCierre: string) => { ok: boolean; error?: string };
+  reabrirExpediente: (expedienteId: string, motivoReapertura: string) => { ok: boolean; error?: string };
   getExpediente: (id: string) => Expediente | undefined;
 }
 
@@ -130,6 +131,35 @@ export const useExpedientesStore = create<ExpedientesStore>()(
           expedientes: state.expedientes.map((e) =>
             e.id === expedienteId
               ? { ...e, estado: 'Cerrado', historial: [...e.historial, entrada] }
+              : e
+          ),
+        }));
+
+        return { ok: true };
+      },
+
+      // ── NUEVO: Parte 2 ──
+      reabrirExpediente: (expedienteId, motivoReapertura) => {
+        const exp = get().expedientes.find((e) => e.id === expedienteId);
+        if (!exp) return { ok: false, error: 'Expediente no encontrado.' };
+        if (exp.estado !== 'Cerrado')
+          return { ok: false, error: 'Solo se pueden reabrir expedientes en estado Cerrado.' };
+
+        const now = new Date().toISOString();
+        const entrada: EntradaHistorial = {
+          id: uid(),
+          tipo: 'reapertura',
+          descripcion: `Expediente reabierto para continuar seguimiento. Motivo: ${motivoReapertura.trim()}`,
+          fecha: now,
+          estadoAnterior: 'Cerrado',
+          estadoNuevo: 'En seguimiento',
+          motivoReapertura: motivoReapertura.trim(),
+        };
+
+        set((state) => ({
+          expedientes: state.expedientes.map((e) =>
+            e.id === expedienteId
+              ? { ...e, estado: 'En seguimiento', historial: [...e.historial, entrada] }
               : e
           ),
         }));
