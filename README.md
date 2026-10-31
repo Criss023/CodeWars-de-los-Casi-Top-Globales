@@ -21,9 +21,10 @@ Asesores jurídicos y personal administrativo del Bufete Popular.
 - **Actividad:** descripción obligatoria, tipo opcional, fecha y hora automáticas.
 
 ### Reglas y supuestos
-- Flujo de estados unidireccional: Abierto → En seguimiento → Cerrado.
+- Flujo de estados: Abierto → En seguimiento → Cerrado → En seguimiento (reapertura permitida).
 - Cierre requiere al menos una actividad registrada **y** motivo de cierre no vacío.
-- Expediente cerrado: solo lectura; no admite actividades ni cambios de estado.
+- Expediente cerrado: no admite actividades ni cambios de estado mientras permanezca cerrado; puede reabrirse con motivo válido.
+- Reapertura solo permitida desde estado Cerrado; rechazada si está Abierto o En seguimiento.
 - Persistencia en localStorage mediante Zustand persist.
 - Todos los datos son ficticios; la app no brinda asesoría jurídica real.
 - Sin autenticación, archivos adjuntos, ni reportes exportables.
@@ -35,7 +36,7 @@ Asesores jurídicos y personal administrativo del Bufete Popular.
 | Cristian | Setup del proyecto, TypeScript types, Zustand store, estructura de rutas, componentes base (Layout, EstadoBadge) |
 | Anibal | Listado de expedientes con búsqueda, formulario de apertura con validación Zod |
 | Francisco | Vista de detalle, historial cronológico, registro de actividades, cambios de estado y cierre |
-| Alejandro | UI/UX, página 404, README completo con decisiones IA y comprobaciones |
+| Alejandro | UI/UX, página 404, reapertura de expedientes (Parte 2), README completo con decisiones IA y comprobaciones |
 
 ## 3. Stack tecnológico
 - React 18 + Vite + TypeScript
@@ -61,17 +62,18 @@ Los datos se conservan en `localStorage` del navegador bajo la clave `bufete-exp
 | Decisión o necesidad | Aporte de la IA | Decisión del equipo y razón | Cómo se comprobó |
 |---|---|---|---|
 | Diseño del modelo de datos: cómo estructurar el historial de cambios | La IA propuso un arreglo `historial` dentro del expediente con entradas tipadas (`apertura`, `actividad`, `cambio_estado`, `cierre`), discriminadas por el campo `tipo` | Aceptamos la estructura porque permite mostrar la cronología completa sin tabla separada y simplifica la persistencia en localStorage con Zustand | Se probó creando expedientes, agregando actividades y cerrándolos; el historial mostró las entradas en orden correcto con sus etiquetas |
-| Manejo de la validación de campos con solo espacios | La IA sugirió usar `z.string().trim().min(1, '...')` en Zod para rechazar strings de solo espacios | Aceptamos la solución; es idiomática en Zod y el trim() transforma el valor antes de validar la longitud mínima | Se probó enviando campos con solo espacios en blanco: el formulario rechazó el envío y mostró el mensaje de error correcto |
-| Persistencia sin backend: localStorage vs IndexedDB | La IA propuso ambas opciones; localStorage con Zustand persist como opción simple y IndexedDB para mayor capacidad | Elegimos localStorage + Zustand persist porque el volumen de datos de la competencia es mínimo, el setup es de una sola línea y el equipo ya dominaba Zustand | Se recargó la aplicación después de crear expedientes y registrar actividades; todos los datos se restauraron correctamente |
+| Manejo de la validación de campos con solo espacios | La IA sugirió usar `z.string().trim().min(1, '...')` en Zod para rechazar strings de solo espacios | Aceptamos la solución; es idiomática en Zod y el `trim()` transforma el valor antes de validar la longitud mínima | Se probó enviando campos con solo espacios en blanco: el formulario rechazó el envío y mostró el mensaje de error correcto |
+| Parte 2 — Reapertura de expedientes cerrados | La IA propuso extender el tipo `TipoHistorial` con un nuevo valor `reapertura` y manejar la transición `Cerrado → En seguimiento` dentro del store existente, conservando intactas todas las entradas previas de cierre | Aceptamos la estrategia: agregamos `reabrirExpediente` al store con validación explícita en la lógica (`estado !== 'Cerrado'` retorna error descriptivo, sin depender solo de la interfaz) y registramos la reapertura como entrada tipada en el historial. Así se preservan todos los cierres anteriores sin modificarlos ni reemplazarlos | Se cerró un expediente, se intentó reabrir con motivo vacío (rechazado por Zod) y desde estado Abierto (rechazado por el store). Se reabrió válidamente desde Cerrado, se agregó una actividad y se volvió a cerrar. El historial mostró ambos cierres y la reapertura con fechas y motivos. Se recargó la app y todos los datos persistieron |
 
 ## 6. Comprobaciones
 
 | Recorrido | Resultado observado | Estado |
 |---|---|---|
-| **1. Apertura:** Crear dos expedientes con identificadores distintos; rechazar campos obligatorios incompletos | Se crearon `EXP-20261031-001` y `EXP-20261031-002`. Al dejar campos vacíos o solo con espacios, el formulario mostró mensajes de error específicos y no permitió el envío | ✅ Cumple |
+| **1. Apertura:** Crear dos expedientes con identificadores distintos; rechazar campos obligatorios incompletos | Se crearon `EXP-20261031-001` y `EXP-20261031-002`. Al dejar campos vacíos o con solo espacios, el formulario mostró mensajes de error específicos y no permitió el envío | ✅ Cumple |
 | **2. Consulta:** Localizar por identificador y persona, abrir detalle e historial, informar búsqueda sin resultados | Se localizaron expedientes por ID y por alias. Al buscar un texto inexistente se mostró el mensaje "No se encontraron expedientes para...". El detalle y el historial abren correctamente | ✅ Cumple |
-| **3. Seguimiento y cierre:** Agregar actividades, pasar a En seguimiento y cerrar; rechazar cierres inválidos; bloquear actividades en cerrado | Se agregaron actividades, se cambió el estado. Al intentar cerrar sin actividades se mostró el aviso correspondiente. Al cerrar con motivo vacío, la validación Zod lo rechazó. Expediente cerrado queda en solo lectura | ✅ Cumple |
+| **3. Seguimiento y cierre:** Agregar actividades, pasar a En seguimiento y cerrar; rechazar cierres inválidos; bloquear actividades en cerrado | Se agregaron actividades y se cambió el estado. Al intentar cerrar sin actividades se mostró el aviso correspondiente. Al cerrar con motivo vacío, Zod rechazó el envío. El expediente cerrado quedó en solo lectura | ✅ Cumple |
 | **Persistencia al recargar** | Se recargó el navegador después de crear expedientes y registrar actividades. Todos los datos se recuperaron de localStorage sin pérdida | ✅ Cumple |
+| **4. Reapertura y trazabilidad:** Rechazar motivos vacíos y reaperturas en estados incorrectos; reabrir válidamente, agregar actividad y cerrar de nuevo; conservar actividades y ambos cierres con sus fechas y motivos, incluso después de recargar | Se intentó reabrir con motivo vacío (Zod lo rechazó con mensaje de error). Se intentó reabrir un expediente en estado Abierto (el store lo rechazó antes de modificar nada). Se reabrió correctamente un expediente Cerrado con motivo válido, quedando En seguimiento. Se agregó una nueva actividad y se cerró de nuevo. El historial mostró ambos cierres y la reapertura con sus respectivas fechas, motivos y etiquetas. Al recargar la app, toda la trazabilidad persistió sin pérdida | ✅ Cumple |
 
 ## 7. Expedientes ficticios de demostración
 
