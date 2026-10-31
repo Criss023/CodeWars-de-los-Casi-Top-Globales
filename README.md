@@ -1,75 +1,78 @@
-# React + TypeScript + Vite
+# Bufete Popular — Sistema de Expedientes
+## AI Code Wars | Tech Day UMG Boot Camp | Quinta Edición | 31 oct 2026
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 1. Ficha de análisis
 
-Currently, two official plugins are available:
+### Problema
+El Bufete Popular necesita un sistema para organizar expedientes de asistencia jurídica gratuita: abrir casos, registrar actividades y consultar su estado e historial.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### Usuario principal
+Asesores jurídicos y personal administrativo del Bufete Popular.
 
-## React Compiler
+### Prioridades
+1. Apertura rápida de expedientes con validación estricta de campos obligatorios.
+2. Búsqueda y consulta eficiente por identificador o alias.
+3. Registro cronológico de actividades y cambios de estado.
+4. Persistencia de datos sin necesidad de backend (localStorage).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Datos principales
+- **Expediente:** ID único auto-generado, alias del solicitante, descripción del asunto, responsable, categoría opcional, estado, fecha de apertura, historial.
+- **Historial:** secuencia cronológica de aperturas, actividades y cambios de estado.
+- **Actividad:** descripción obligatoria, tipo opcional, fecha y hora automáticas.
 
-## Expanding the ESLint configuration
+### Reglas y supuestos
+- Flujo de estados unidireccional: Abierto → En seguimiento → Cerrado.
+- Cierre requiere al menos una actividad registrada y motivo de cierre no vacío.
+- Expediente cerrado: solo lectura; no admite actividades ni cambios de estado.
+- Persistencia en localStorage mediante Zustand persist; no se requiere backend.
+- Todos los datos son ficticios; la app no brinda asesoría jurídica real.
+- Sin autenticación, archivos adjuntos ni reportes exportables.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 2. Responsabilidades del equipo
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+| Integrante | Área de trabajo |
+|---|---|
+| Cristian | Setup del proyecto, TypeScript types, Zustand store, estructura de rutas, componentes base |
+| Anibal | Listado de expedientes, búsqueda, formulario de apertura con validación |
+| Francisco | Vista de detalle, historial cronológico, registro de actividades, cambios de estado y cierre |
+| Alejandro | UI/UX con Tailwind, mensajes de confirmación/error, README completo con decisiones IA y comprobaciones |
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 3. Stack tecnológico
+- React 18 + Vite + TypeScript
+- React Router v6 (enrutamiento SPA)
+- Zustand + persist middleware (estado global + localStorage)
+- react-hook-form + Zod (formularios con validación)
+- TailwindCSS (estilos responsivos)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 4. Cómo ejecutar
 
+```bash
+npm install
+npm run dev
 ```
+Abrir en el navegador: http://localhost:5173
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+> Requisitos: Node.js 18 o superior.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 5. Decisiones y uso razonado de la IA
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Decisión o necesidad | Aporte de la IA | Decisión del equipo y razón | Cómo se comprobó |
+|---|---|---|---|
+| *(Por completar — Alejandro)* | | | |
+| | | | |
+| | | | |
 
-```
+## 6. Comprobaciones
+
+| Recorrido | Resultado observado | Estado |
+|---|---|---|
+| 1. Apertura | *(Por completar — Alejandro)* | |
+| 2. Consulta | | |
+| 3. Seguimiento y cierre | | |
+| Persistencia al recargar | | |
+
+## 7. Limitaciones conocidas
+- Sin autenticación de usuarios.
+- Sin archivos adjuntos.
+- Sin reportes exportables.
+- Datos almacenados solo en el navegador (localStorage); limpiar los datos del navegador borra los expedientes.
