@@ -3,6 +3,7 @@ import { Layout } from './components/Layout';
 import { ExpedientesPage } from './pages/ExpedientesPage';
 import { NuevoExpedientePage } from './pages/NuevoExpedientePage';
 import { ExpedienteDetailPage } from './pages/ExpedienteDetailPage';
+import { NotFoundPage } from './pages/NotFoundPage';
 
 export default function App() {
   return (
@@ -13,7 +14,7 @@ export default function App() {
           <Route path="/expedientes" element={<ExpedientesPage />} />
           <Route path="/expedientes/nuevo" element={<NuevoExpedientePage />} />
           <Route path="/expedientes/:id" element={<ExpedienteDetailPage />} />
-          <Route path="*" element={<Navigate to="/expedientes" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Layout>
     </BrowserRouter>
